@@ -1,7 +1,7 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { registerApiProvider } from "@earendil-works/pi-ai/compat";
 import { getZCodeApiKey, loginZCode, refreshZCodeToken } from "./auth/index.js";
-import { readStoredZCodeCredentials } from "./auth/credentials.js";
+import { readStoredZCodeCredentials, setStoredZCodeCredentials } from "./auth/credentials.js";
 import {
   acquireCaptchaVerifyParam,
   DEFAULT_ENDPOINT,
@@ -113,11 +113,10 @@ export async function detectAndRegisterPlans(
       name: "ZCode Cloud",
       login: async (callbacks) => {
         const creds = await loginZCode(callbacks);
+        const parsed = parseApiKey(getZCodeApiKey(creds));
+        setStoredZCodeCredentials(parsed);
         if (activeExtensionAPI) {
-          await detectAndRegisterPlans(
-            activeExtensionAPI,
-            parseApiKey(getZCodeApiKey(creds)),
-          ).catch(() => undefined);
+          await detectAndRegisterPlans(activeExtensionAPI, parsed).catch(() => undefined);
         }
         return creds;
       },
@@ -154,7 +153,9 @@ export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void
       name: "ZCode Cloud",
       login: async (callbacks) => {
         const creds = await loginZCode(callbacks);
-        await detectAndRegisterPlans(pi, parseApiKey(getZCodeApiKey(creds))).catch(() => undefined);
+        const parsed = parseApiKey(getZCodeApiKey(creds));
+        setStoredZCodeCredentials(parsed);
+        await detectAndRegisterPlans(pi, parsed).catch(() => undefined);
         return creds;
       },
       refreshToken: refreshZCodeToken,

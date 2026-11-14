@@ -110,7 +110,7 @@ function extractUpstreamErrorCode(body: string): number | undefined {
     const payload = JSON.parse(body) as { code?: unknown; error?: { code?: unknown } };
     const raw = payload.code ?? payload.error?.code;
     if (typeof raw === "number" && Number.isSafeInteger(raw)) return raw;
-    if (typeof raw === "string" && /^\\d+$/.test(raw)) return Number(raw);
+    if (typeof raw === "string" && /^\d+$/.test(raw)) return Number(raw);
   } catch {
     // Non-JSON gateway errors are possible.
   }

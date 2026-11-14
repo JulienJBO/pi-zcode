@@ -1,10 +1,10 @@
 # pi-zcode-cloud
 
+> **Compatibility fork:** Install `git:github.com/JulienJBO/pi-zcode`, not the upstream `npm:pi-zcode` package. All Pi providers and OAuth credentials use the distinct `zcode-cloud` namespace so this fork coexists with `pi-zcode-provider`.
+
 <p align="center">
-  <a href="https://www.npmjs.com/package/pi-zcode"><img src="https://img.shields.io/npm/v/pi-zcode?logo=npm&logoColor=white&color=CB3837" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/pi-zcode"><img src="https://img.shields.io/npm/dm/pi-zcode?logo=npm&logoColor=white&color=CB3837" alt="npm downloads"></a>
-  <a href="https://github.com/xifan2333/pi-zcode"><img src="https://img.shields.io/github/stars/xifan2333/pi-zcode?logo=github&logoColor=white&color=181717" alt="github stars"></a>
-  <a href="https://github.com/xifan2333/pi-zcode/blob/master/LICENSE"><img src="https://img.shields.io/github/license/xifan2333/pi-zcode?logo=open-source-initiative&logoColor=white&color=blue" alt="license"></a>
+  <a href="https://github.com/JulienJBO/pi-zcode"><img src="https://img.shields.io/github/stars/JulienJBO/pi-zcode?logo=github&logoColor=white&color=181717" alt="github stars"></a>
+  <a href="https://github.com/JulienJBO/pi-zcode/blob/master/LICENSE"><img src="https://img.shields.io/github/license/JulienJBO/pi-zcode?logo=open-source-initiative&logoColor=white&color=blue" alt="license"></a>
   <img src="https://img.shields.io/badge/node-%3E%3D20.0.0-339933?logo=node.js&logoColor=white" alt="node version">
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white" alt="typescript">
 </p>
@@ -21,7 +21,7 @@
 
 ## Overview
 
-`pi-zcode` is a lightweight, zero-dependency standalone provider extension that connects the [Pi Coding Agent](https://pi.dev) directly to ZCode, Z.AI, and BigModel cloud services. It brings GLM-5.3, GLM-5.3-Flash, and GLM-5.x reasoning models directly into your terminal coding workflow with zero external CLI or desktop application dependencies.
+`pi-zcode-cloud` is a lightweight, zero-dependency standalone provider extension that connects the [Pi Coding Agent](https://pi.dev) directly to ZCode, Z.AI, and BigModel cloud services. It brings GLM-5.3, GLM-5.3-Flash, and GLM-5.x reasoning models directly into your terminal coding workflow with zero external CLI or desktop application dependencies.
 
 ---
 

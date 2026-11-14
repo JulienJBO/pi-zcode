@@ -74,7 +74,7 @@ export async function detectAndRegisterPlans(
     registrations.push({ plan: ZCodePlan.INDIVIDUAL_PLAN, ids: undefined });
   }
 
-  const allActiveModels = [];
+  const startPlanModels = [];
 
   for (const reg of registrations) {
     const ids = await fetchModelIdsForPlan(
@@ -107,7 +107,9 @@ export async function detectAndRegisterPlans(
       streamSimple: streamZCode,
     });
 
-    allActiveModels.push(...models);
+    if (reg.plan === ZCodePlan.START_PLAN) {
+      startPlanModels.push(...models);
+    }
   }
 
   // Remove plans whose entitlements disappeared rather than retaining stale models.
@@ -118,12 +120,13 @@ export async function detectAndRegisterPlans(
     pi.unregisterProvider(PROVIDER_ID_INDIVIDUAL_PLAN);
   }
 
-  // Also register active models on the base `zcode-cloud` provider so /model zcode-cloud/<model> works
+  // The base OAuth provider only exposes Start Plan models: Individual Plan models
+  // have a dedicated provider, and must not accidentally route through Start Plan.
   pi.registerProvider(PROVIDER_ID, {
     name: "ZCode Cloud",
     baseUrl: DEFAULT_ENDPOINT,
     api: ZCODE_API,
-    models: allActiveModels,
+    models: startPlanModels,
     oauth: {
       name: "ZCode Cloud",
       login: async (callbacks) => {

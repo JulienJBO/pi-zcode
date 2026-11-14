@@ -111,3 +111,12 @@ Since v0.1.5, the plan providers are marked as configured using a **public, non-
 
 Update with `pi update git:github.com/JulienJBO/pi-zcode`, then use `/reload` and `/model`. `/zcode-cloud.doctor` reports per-provider registered and selectable counts, and whether the OAuth login is stored. This is more useful than `endpoint: none`, which simply means no inference request has run.
 
+
+## HTTP 405 / upstream code 3012 on Start Plan
+
+If `/zcode-cloud.usage` shows Start Plan active and `/model` exposes `glm-5.3-flash`, but inference receives `HTTP 405 / upstreamCode: 3012`, ZCode's gateway has rejected the request as unusual activity. The model registration and OAuth entitlement query are working; **that does not prove inference is authorized**.
+
+`/zcode-cloud.doctor` now preserves the **numerical upstream error code**, HTTP status, model, endpoint and request ID without exposing credentials or raw response bodies. The extension makes no attempt to bypass ZCode risk controls and does not retry this non-transient rejection automatically.
+
+Try the same account/model once in official ZCode Desktop. If it also fails, contact [ZCode support](https://github.com/zai-org/feedback/issues) and include the request ID and HTTP/upstream error codes (never tokens). If the official client works, the restriction may be specific to third-party request formatting; this does not imply an account ban. There are public reports of identical errors affecting the official client too.
+

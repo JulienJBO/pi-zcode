@@ -31,6 +31,7 @@ export interface ZCodeParsedApiKey {
 export interface ZCodeDiagnosticsSnapshot {
   endpoint?: string;
   status?: number;
+  upstreamCode?: number;
   latencyMs?: number;
   error?: string;
   resolvedRuntimeModel?: string;

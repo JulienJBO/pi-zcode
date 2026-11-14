@@ -1,6 +1,6 @@
 {
   "name": "pi-zcode-cloud",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "ZCode Cloud provider for Pi, compatible with pi-zcode-provider",
   "type": "module",
   "main": "./src/index.ts",

@@ -30,6 +30,7 @@ import {
   setLastRequestId,
   setLastResolvedRuntimeModel,
   setLastStatus,
+  setLastUpstreamCode,
 } from "../diagnostics/diagnostics.js";
 import { readStoredZCodeCredentials } from "../auth/credentials.js";
 import {
@@ -63,7 +64,12 @@ function friendlyZCodeError(status: number | undefined, text: string): string {
     return `Start Plan model is currently busy or concurrency limit reached. Please retry shortly.`;
   }
   if (/3012|unusual activity/i.test(msg)) {
-    return `ZCode gateway check rejected request. Please check /zcode-cloud.doctor.`;
+    return (
+      `ZCode upstream restriction (HTTP ${status ?? "unknown"}, code 3012: unusual activity). ` +
+      "Test this account in the official ZCode client; if it also fails, " +
+      "contact Z.ai support with the requestId from /zcode-cloud.doctor. " +
+      "Third-party clients may be rejected independently."
+    );
   }
   if (/1113|insufficient balance|arrear|no resource package/i.test(msg)) {
     return `Insufficient balance or no active plan for this model. Run /login zcode-cloud to refresh.`;
@@ -89,10 +95,26 @@ function friendlyZCodeError(status: number | undefined, text: string): string {
   if (status === 429) {
     return `Rate limit exceeded. Please wait a moment and retry.`;
   }
+  if (status === 405) {
+    return `ZCode returned HTTP 405 (request rejected): ${msg}. Check /zcode-cloud.doctor.`;
+  }
   if (status && status >= 500) {
     return `Server error (${status}: ${msg}). Next: retry in a moment.`;
   }
   return msg || "Unknown API error";
+}
+
+/** Read only the provider error code; never store the raw upstream response. */
+function extractUpstreamErrorCode(body: string): number | undefined {
+  try {
+    const payload = JSON.parse(body) as { code?: unknown; error?: { code?: unknown } };
+    const raw = payload.code ?? payload.error?.code;
+    if (typeof raw === "number" && Number.isSafeInteger(raw)) return raw;
+    if (typeof raw === "string" && /^\\d+$/.test(raw)) return Number(raw);
+  } catch {
+    // Non-JSON gateway errors are possible.
+  }
+  return undefined;
 }
 
 function convertTools(tools?: Tool[]): Record<string, unknown>[] | undefined {
@@ -360,6 +382,9 @@ export function streamZCode(
       const endpoint = resolveEndpointForPlan(plan, model, auth);
       setLastEndpoint(endpoint);
       setLastResolvedRuntimeModel(model.id);
+      setLastStatus(undefined);
+      setLastUpstreamCode(undefined);
+      setLastRequestId(undefined);
 
       let captchaParam: { param: string; region: string } | undefined = undefined;
       if (plan === ZCodePlan.START_PLAN) {
@@ -399,11 +424,13 @@ export function streamZCode(
         if (requestId) setLastRequestId(requestId);
 
         if (candidateRes.ok) {
+          setLastUpstreamCode(undefined);
           res = candidateRes;
           break;
         }
 
         lastErrText = await candidateRes.text().catch(() => "");
+        setLastUpstreamCode(extractUpstreamErrorCode(lastErrText));
 
         // Auto-recover from 3007 (Captcha required on Start Plan) by solving headlessly in background
         if (

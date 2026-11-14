@@ -32,7 +32,10 @@ import {
   setLastStatus,
 } from "../diagnostics/diagnostics.js";
 import { readStoredZCodeCredentials } from "../auth/credentials.js";
-import { PROVIDER_ID_INDIVIDUAL_PLAN } from "../models/models.js";
+import {
+  PROVIDER_ID_INDIVIDUAL_PLAN,
+  PROVIDER_ID_START_PLAN,
+} from "../models/models.js";
 import { ZCodePlan } from "../types/enums.js";
 import { ZCODE_API } from "../types/types.js";
 import { redactSecrets } from "../utils/security.js";
@@ -343,12 +346,16 @@ export function streamZCode(
     const toolCallRawArgs = new Map<number, string>();
 
     try {
-      // Plan providers reuse only the namespaced OAuth login of this fork.
-      let auth = parseApiKey(options?.apiKey);
-      if (!auth.token && !auth.zcodeJwtToken) {
-        auth = readStoredZCodeCredentials() ?? auth;
-      }
-      if (!auth.token && !auth.zcodeJwtToken) {
+      // Pi marks the plan providers configured via a *non-secret* marker.
+      // Never interpret that marker as a credential or send it to ZCode:
+      // only the base zcode-cloud OAuth storage owns the real token.
+      const linkedPlan =
+        model.provider === PROVIDER_ID_START_PLAN ||
+        model.provider === PROVIDER_ID_INDIVIDUAL_PLAN;
+      const auth = linkedPlan
+        ? readStoredZCodeCredentials(true)
+        : parseApiKey(options?.apiKey);
+      if (!auth || (!auth.token && !auth.zcodeJwtToken)) {
         throw new Error("Missing ZCode credentials. Run /login zcode-cloud first.");
       }
 

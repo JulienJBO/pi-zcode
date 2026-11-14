@@ -23,7 +23,10 @@ test("login and credential storage are isolated", () => {
 test("custom transport and individual plan routing stay isolated", () => {
   assert.match(read("src/types/types.ts"), /"zcode-cloud-stream"/);
   assert.match(read("src/stream/stream.ts"), /model\.provider === PROVIDER_ID_INDIVIDUAL_PLAN/);
-  assert.match(read("src/stream/stream.ts"), /readStoredZCodeCredentials\(\) \?\? auth/);
+  const stream = read("src/stream/stream.ts");
+  assert.match(stream, /readStoredZCodeCredentials\(true\)/);
+  assert.match(stream, /model\.provider === PROVIDER_ID_START_PLAN/);
+  assert.match(stream, /model\.provider === PROVIDER_ID_INDIVIDUAL_PLAN/);
   const index = read("src/index.ts");
   assert.match(index, /message\.provider !== PROVIDER_ID_START_PLAN/);
   assert.match(index, /message\.provider !== PROVIDER_ID_INDIVIDUAL_PLAN/);
@@ -40,4 +43,16 @@ test("commands and package identity do not collide", () => {
   assert.equal(lock.name, pkg.name);
   assert.equal(lock.packages[""].name, pkg.name);
   assert.equal(lock.version, pkg.version);
+});
+
+test("plan-specific providers are selectable without copying OAuth tokens", () => {
+  const entry = read("src/index.ts");
+  const credentials = read("src/auth/credentials.ts");
+  const stream = read("src/stream/stream.ts");
+  assert.match(entry, /apiKey: LINKED_PLAN_API_KEY_MARKER/);
+  assert.match(credentials, /LINKED_PLAN_API_KEY_MARKER = "pi-zcode-cloud-linked-oauth"/);
+  assert.match(stream, /const auth = linkedPlan[\s\S]*readStoredZCodeCredentials\(true\)/);
+  assert.doesNotMatch(stream, /readStoredZCodeCredentials\(\) \?\? auth/);
+  assert.match(entry, /getProviderAuthStatus\(id\)/);
+  assert.match(entry, /getAvailable\(\)/);
 });

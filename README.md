@@ -102,3 +102,12 @@ This is a compatibility fork of [xifan2333/pi-zcode](https://github.com/xifan233
 Install with `pi install git:github.com/JulienJBO/pi-zcode`, reload Pi, then run `/login zcode-cloud` and select a model from `zcode-cloud-start-plan` using `/model`. The separate OAuth login is intentional: credentials are stored under `zcode-cloud` and never borrowed from `zcode`. Other providers are `zcode-cloud` and `zcode-cloud-individual-plan`. The streaming API and `/zcode-cloud.usage` and `/zcode-cloud.doctor` commands are also namespaced. To provide an explicit key, set `ZCODE_CLOUD_API_KEY` or `ZCODE_CLOUD_TOKEN`.
 
 Static namespace tests cannot prove successful authentication/inference. Validate those interactively with your ZCode account. Original authorship and MIT license are preserved.
+
+## Start Plan models missing from `/model`
+
+On builds before v0.1.5, the Start Plan could be active according to `/zcode-cloud.usage`, yet absent from `/model`: Pi hides models of providers without configured authentication.
+
+Since v0.1.5, the plan providers are marked as configured using a **public, non-secret in-memory marker**. Their streaming handler discards this marker and resolves the current credentials from the base `zcode-cloud` OAuth login; it never sends the marker to the remote API. The existing `zcode` provider remains isolated. Plan providers disappear when their entitlements are no longer active or when a new session starts without base credentials. Logging out during an active session may leave a stale catalog entry until the next session, but inference fails closed if the real credential is missing.
+
+Update with `pi update git:github.com/JulienJBO/pi-zcode`, then use `/reload` and `/model`. `/zcode-cloud.doctor` reports per-provider registered and selectable counts, and whether the OAuth login is stored. This is more useful than `endpoint: none`, which simply means no inference request has run.
+

@@ -1,7 +1,11 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { registerApiProvider } from "@earendil-works/pi-ai/compat";
 import { getZCodeApiKey, loginZCode, refreshZCodeToken } from "./auth/index.js";
-import { readStoredZCodeCredentials, setStoredZCodeCredentials } from "./auth/credentials.js";
+import {
+  LINKED_PLAN_API_KEY_MARKER,
+  readStoredZCodeCredentials,
+  setStoredZCodeCredentials,
+} from "./auth/credentials.js";
 import {
   acquireCaptchaVerifyParam,
   DEFAULT_ENDPOINT,
@@ -93,6 +97,9 @@ export async function detectAndRegisterPlans(
 
     // Register dedicated provider for this plan (e.g. zcode-cloud-start-plan)
     pi.registerProvider(providerId, {
+      // An in-memory, non-secret auth marker makes this model selectable in Pi.
+      // The stream resolves the base provider OAuth token, never this marker.
+      apiKey: LINKED_PLAN_API_KEY_MARKER,
       name: PROVIDER_NAMES[reg.plan],
       baseUrl: DEFAULT_ENDPOINT,
       api: ZCODE_API,
@@ -101,6 +108,14 @@ export async function detectAndRegisterPlans(
     });
 
     allActiveModels.push(...models);
+  }
+
+  // Remove plans whose entitlements disappeared rather than retaining stale models.
+  if (plans.startPlan.status !== ZCodePlanStatus.ACTIVE) {
+    pi.unregisterProvider(PROVIDER_ID_START_PLAN);
+  }
+  if (plans.individualPlan.status !== ZCodePlanStatus.ACTIVE) {
+    pi.unregisterProvider(PROVIDER_ID_INDIVIDUAL_PLAN);
   }
 
   // Also register active models on the base `zcode-cloud` provider so /model zcode-cloud/<model> works
@@ -175,6 +190,10 @@ export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void
     const creds = readStoredZCodeCredentials(true);
     if (creds) {
       await detectAndRegisterPlans(pi, creds).catch(() => undefined);
+    } else {
+      // The plan providers have no independent credentials: hide them on logout.
+      pi.unregisterProvider(PROVIDER_ID_START_PLAN);
+      pi.unregisterProvider(PROVIDER_ID_INDIVIDUAL_PLAN);
     }
   });
 
@@ -214,8 +233,19 @@ export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void
     description: "Show ZCode diagnostics report",
     handler: async (_args, ctx) => {
       const d = getLastDiagnostics();
+      const registeredModels = ctx.modelRegistry.getAll();
+      const availableModels = ctx.modelRegistry.getAvailable();
+      const linkedLogin = Boolean(readStoredZCodeCredentials(true));
+      const providerIds = [PROVIDER_ID, PROVIDER_ID_START_PLAN, PROVIDER_ID_INDIVIDUAL_PLAN];
       const lines = [
         "ZCode Cloud Provider Doctor",
+        `• OAuth (base): ${linkedLogin ? "stored" : "missing"}`,
+        ...providerIds.map((id) => {
+          const registered = registeredModels.filter((model) => model.provider === id);
+          const available = availableModels.filter((model) => model.provider === id);
+          const configured = ctx.modelRegistry.getProviderAuthStatus(id).configured;
+          return `• ${id}: registered=${registered.length}, selectable=${available.length}, auth=${configured ? "configured" : "missing"}`;
+        }),
         `• providerId: ${PROVIDER_ID}`,
         `• endpoint: ${d.endpoint || "none"}`,
         `• status: ${d.status ?? "none"}`,

@@ -3,6 +3,11 @@ import type { ZCodeParsedApiKey } from "../types/types.js";
 import { parseApiKey } from "../client/client.js";
 import { PROVIDER_ID } from "../models/models.js";
 
+// Pi requires each selectable provider to have its own configured auth source.
+// This marker is public, not a token: streaming resolves the real OAuth credential
+// exclusively through the base zcode-cloud provider at request time.
+export const LINKED_PLAN_API_KEY_MARKER = "pi-zcode-cloud-linked-oauth";
+
 let cached: ZCodeParsedApiKey | undefined = undefined;
 let loadedAt = 0;
 

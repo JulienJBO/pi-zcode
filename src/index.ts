@@ -1,7 +1,11 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { registerApiProvider } from "@earendil-works/pi-ai/compat";
 import { getZCodeApiKey, loginZCode, refreshZCodeToken } from "./auth/index.js";
-import { readStoredZCodeCredentials, setStoredZCodeCredentials } from "./auth/credentials.js";
+import {
+  LINKED_PLAN_API_KEY_MARKER,
+  readStoredZCodeCredentials,
+  setStoredZCodeCredentials,
+} from "./auth/credentials.js";
 import {
   acquireCaptchaVerifyParam,
   DEFAULT_ENDPOINT,
@@ -9,7 +13,7 @@ import {
   parseApiKey,
   prewarmConnection,
 } from "./client/index.js";
-import { getLastDiagnostics, runWithDiagnostics } from "./diagnostics/index.js";
+import { getLastDiagnostics, runWithDiagnostics, setLastError } from "./diagnostics/index.js";
 import {
   buildModelsForPlan,
   fetchModelCatalog,
@@ -70,7 +74,7 @@ export async function detectAndRegisterPlans(
     registrations.push({ plan: ZCodePlan.INDIVIDUAL_PLAN, ids: undefined });
   }
 
-  const allActiveModels = [];
+  const startPlanModels = [];
 
   for (const reg of registrations) {
     const ids = await fetchModelIdsForPlan(
@@ -93,6 +97,9 @@ export async function detectAndRegisterPlans(
 
     // Register dedicated provider for this plan (e.g. zcode-cloud-start-plan)
     pi.registerProvider(providerId, {
+      // An in-memory, non-secret auth marker makes this model selectable in Pi.
+      // The stream resolves the base provider OAuth token, never this marker.
+      apiKey: LINKED_PLAN_API_KEY_MARKER,
       name: PROVIDER_NAMES[reg.plan],
       baseUrl: DEFAULT_ENDPOINT,
       api: ZCODE_API,
@@ -100,15 +107,26 @@ export async function detectAndRegisterPlans(
       streamSimple: streamZCode,
     });
 
-    allActiveModels.push(...models);
+    if (reg.plan === ZCodePlan.START_PLAN) {
+      startPlanModels.push(...models);
+    }
   }
 
-  // Also register active models on the base `zcode-cloud` provider so /model zcode-cloud/<model> works
+  // Remove plans whose entitlements disappeared rather than retaining stale models.
+  if (plans.startPlan.status !== ZCodePlanStatus.ACTIVE) {
+    pi.unregisterProvider(PROVIDER_ID_START_PLAN);
+  }
+  if (plans.individualPlan.status !== ZCodePlanStatus.ACTIVE) {
+    pi.unregisterProvider(PROVIDER_ID_INDIVIDUAL_PLAN);
+  }
+
+  // The base OAuth provider only exposes Start Plan models: Individual Plan models
+  // have a dedicated provider, and must not accidentally route through Start Plan.
   pi.registerProvider(PROVIDER_ID, {
     name: "ZCode Cloud",
     baseUrl: DEFAULT_ENDPOINT,
     api: ZCODE_API,
-    models: allActiveModels,
+    models: startPlanModels,
     oauth: {
       name: "ZCode Cloud",
       login: async (callbacks) => {
@@ -116,7 +134,7 @@ export async function detectAndRegisterPlans(
         const parsed = parseApiKey(getZCodeApiKey(creds));
         setStoredZCodeCredentials(parsed);
         if (activeExtensionAPI) {
-          await detectAndRegisterPlans(activeExtensionAPI, parsed).catch(() => undefined);
+          await registerPlansWithDiagnostics(activeExtensionAPI, parsed);
         }
         return creds;
       },
@@ -127,6 +145,19 @@ export async function detectAndRegisterPlans(
   });
 
   return plans;
+}
+
+async function registerPlansWithDiagnostics(
+  pi: ExtensionAPI,
+  credentials: ZCodeParsedApiKey,
+): Promise<void> {
+  try {
+    await detectAndRegisterPlans(pi, credentials);
+  } catch (error) {
+    // Do not turn a successful OAuth login into a failure just because the
+    // entitlement catalog cannot be refreshed; expose the error in /doctor.
+    setLastError(error);
+  }
 }
 
 export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void> {
@@ -155,7 +186,7 @@ export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void
         const creds = await loginZCode(callbacks);
         const parsed = parseApiKey(getZCodeApiKey(creds));
         setStoredZCodeCredentials(parsed);
-        await detectAndRegisterPlans(pi, parsed).catch(() => undefined);
+        await registerPlansWithDiagnostics(pi, parsed);
         return creds;
       },
       refreshToken: refreshZCodeToken,
@@ -167,14 +198,18 @@ export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void
   // If already logged in, register plan providers immediately on startup
   const stored = readStoredZCodeCredentials(true);
   if (stored) {
-    await detectAndRegisterPlans(pi, stored).catch(() => undefined);
+    await registerPlansWithDiagnostics(pi, stored);
   }
 
   // Refresh plan registration on session start
   pi.on("session_start", async () => {
     const creds = readStoredZCodeCredentials(true);
     if (creds) {
-      await detectAndRegisterPlans(pi, creds).catch(() => undefined);
+      await registerPlansWithDiagnostics(pi, creds);
+    } else {
+      // The plan providers have no independent credentials: hide them on logout.
+      pi.unregisterProvider(PROVIDER_ID_START_PLAN);
+      pi.unregisterProvider(PROVIDER_ID_INDIVIDUAL_PLAN);
     }
   });
 
@@ -214,8 +249,19 @@ export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void
     description: "Show ZCode diagnostics report",
     handler: async (_args, ctx) => {
       const d = getLastDiagnostics();
+      const registeredModels = ctx.modelRegistry.getAll();
+      const availableModels = ctx.modelRegistry.getAvailable();
+      const linkedLogin = Boolean(readStoredZCodeCredentials(true));
+      const providerIds = [PROVIDER_ID, PROVIDER_ID_START_PLAN, PROVIDER_ID_INDIVIDUAL_PLAN];
       const lines = [
         "ZCode Cloud Provider Doctor",
+        `• OAuth (base): ${linkedLogin ? "stored" : "missing"}`,
+        ...providerIds.map((id) => {
+          const registered = registeredModels.filter((model) => model.provider === id);
+          const available = availableModels.filter((model) => model.provider === id);
+          const configured = ctx.modelRegistry.getProviderAuthStatus(id).configured;
+          return `• ${id}: registered=${registered.length}, selectable=${available.length}, auth=${configured ? "configured" : "missing"}`;
+        }),
         `• providerId: ${PROVIDER_ID}`,
         `• endpoint: ${d.endpoint || "none"}`,
         `• status: ${d.status ?? "none"}`,

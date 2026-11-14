@@ -63,3 +63,17 @@ test("base OAuth provider exposes only Start Plan models", () => {
   assert.match(entry, /models: startPlanModels/);
   assert.doesNotMatch(entry, /allActiveModels/);
 });
+
+test("gateway risk-control errors retain upstream status and diagnostic code", () => {
+  const stream = read("src/stream/stream.ts");
+  const diagnostics = read("src/diagnostics/diagnostics.ts");
+  const types = read("src/types/types.ts");
+  const entry = read("src/index.ts");
+  assert.match(stream, /extractUpstreamErrorCode\(lastErrText\)/);
+  assert.match(stream, /code 3012: unusual activity/);
+  assert.match(stream, /official ZCode client/);
+  assert.match(stream, /setLastUpstreamCode\(undefined\)/);
+  assert.match(diagnostics, /export function setLastUpstreamCode/);
+  assert.match(types, /upstreamCode\?: number;/);
+  assert.match(entry, /upstreamCode: \$\{d\.upstreamCode \?\? "none"\}/);
+});

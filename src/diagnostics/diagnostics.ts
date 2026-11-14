@@ -19,6 +19,10 @@ export function setLastStatus(status?: number): void {
   lastDiagnostics.status = status;
 }
 
+export function setLastUpstreamCode(code?: number): void {
+  lastDiagnostics.upstreamCode = code;
+}
+
 export function setLastLatencyMs(latencyMs?: number): void {
   lastDiagnostics.latencyMs = latencyMs;
 }

@@ -265,6 +265,7 @@ export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void
         `• providerId: ${PROVIDER_ID}`,
         `• endpoint: ${d.endpoint || "none"}`,
         `• status: ${d.status ?? "none"}`,
+        `• upstreamCode: ${d.upstreamCode ?? "none"}`,
         `• model: ${d.resolvedRuntimeModel || "none"}`,
         `• latencyMs: ${d.latencyMs !== undefined ? `${d.latencyMs}ms` : "none"}`,
         `• requestId: ${d.requestId || "none"}`,

@@ -1,4 +1,4 @@
-# pi-zcode
+# pi-zcode-cloud
 
 <p align="center">
   <a href="https://www.npmjs.com/package/pi-zcode"><img src="https://img.shields.io/npm/v/pi-zcode?logo=npm&logoColor=white&color=CB3837" alt="npm version"></a>
@@ -28,11 +28,11 @@
 ## Features
 
 - **Pure Standalone**: Connects directly via upstream HTTP/SSE APIs. No local ZCode desktop client, CLI daemon, or proxy processes required.
-- **Auto Plan Detection**: Automatically identifies account entitlements (`Start Plan` and `Individual Plan`) and dynamically registers providers (`zcode`, `zcode-start-plan`, `zcode-individual-plan`).
+- **Auto Plan Detection**: Automatically identifies account entitlements (`Start Plan` and `Individual Plan`) and dynamically registers providers (`zcode-cloud`, `zcode-cloud-start-plan`, `zcode-cloud-individual-plan`).
 - **Dynamic Model Discovery**: Queries models live from upstream APIs instead of relying on hardcoded lists.
 - **In-Process Headless CAPTCHA Solver**: Integrates an in-memory DOM simulation (`happy-dom`) solving Aliyun CAPTCHA challenges in under 1 second in the background. Completely automated with zero browser popups or workflow interruptions.
 - **Full Reasoning & Tool Support**: Native streaming of thinking content (`reasoning_content` / Anthropic thinking blocks) and structured tool calls.
-- **Quota & Diagnostics**: Real-time quota inspection via `/zcode.usage` and connection diagnostics via `/zcode.doctor`.
+- **Quota & Diagnostics**: Real-time quota inspection via `/zcode-cloud.usage` and connection diagnostics via `/zcode-cloud.doctor`.
 
 ---
 
@@ -41,7 +41,7 @@
 1. **Install the extension in Pi**:
 
    ```bash
-   pi install npm:pi-zcode
+   pi install git:github.com/JulienJBO/pi-zcode
    ```
 
    Or install from local source:
@@ -53,7 +53,7 @@
 2. **Authenticate with your ZCode account**:
 
    ```text
-   /login zcode
+   /login zcode-cloud
    ```
 
    Select your preferred OAuth provider (`BigModel` for China mainland or `Z.ai` for Global).
@@ -61,11 +61,11 @@
 3. **Select a model**:
    Use Pi's native model picker:
    ```text
-   /model zcode/glm-5.3-flash
+   /model zcode-cloud/glm-5.3-flash
    ```
    or flagship reasoning model:
    ```text
-   /model zcode/glm-5.3
+   /model zcode-cloud/glm-5.3
    ```
 
 ---
@@ -74,10 +74,10 @@
 
 | Command         | Description                                                            |
 | :-------------- | :--------------------------------------------------------------------- |
-| `/login zcode`  | Log in via Z.ai or BigModel browser OAuth flow.                        |
+| `/login zcode-cloud`  | Log in via Z.ai or BigModel browser OAuth flow.                        |
 | `/model`        | Pi native model selector showing all entitled ZCode models.            |
-| `/zcode.usage`  | View detected plan tier, daily balance, and quota reset timestamps.    |
-| `/zcode.doctor` | Show diagnostic stats (latency, request IDs, endpoint, error history). |
+| `/zcode-cloud.usage`  | View detected plan tier, daily balance, and quota reset timestamps.    |
+| `/zcode-cloud.doctor` | Show diagnostic stats (latency, request IDs, endpoint, error history). |
 
 ---
 
@@ -94,3 +94,11 @@
 ## License
 
 [MIT](LICENSE)
+
+## Compatibility with pi-zcode-provider
+
+This is a compatibility fork of [xifan2333/pi-zcode](https://github.com/xifan2333/pi-zcode), licensed under MIT. It is intended to coexist with [D4NZ-jpg/pi-zcode-provider](https://github.com/D4NZ-jpg/pi-zcode-provider).
+
+Install with `pi install git:github.com/JulienJBO/pi-zcode`, reload Pi, then run `/login zcode-cloud` and select a model from `zcode-cloud-start-plan` using `/model`. The separate OAuth login is intentional: credentials are stored under `zcode-cloud` and never borrowed from `zcode`. Other providers are `zcode-cloud` and `zcode-cloud-individual-plan`. The streaming API and `/zcode-cloud.usage` and `/zcode-cloud.doctor` commands are also namespaced. To provide an explicit key, set `ZCODE_CLOUD_API_KEY` or `ZCODE_CLOUD_TOKEN`.
+
+Static namespace tests cannot prove successful authentication/inference. Validate those interactively with your ZCode account. Original authorship and MIT license are preserved.

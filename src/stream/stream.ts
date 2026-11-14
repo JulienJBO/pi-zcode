@@ -31,6 +31,8 @@ import {
   setLastResolvedRuntimeModel,
   setLastStatus,
 } from "../diagnostics/diagnostics.js";
+import { readStoredZCodeCredentials } from "../auth/credentials.js";
+import { PROVIDER_ID_INDIVIDUAL_PLAN } from "../models/models.js";
 import { ZCodePlan } from "../types/enums.js";
 import { ZCODE_API } from "../types/types.js";
 import { redactSecrets } from "../utils/security.js";
@@ -58,13 +60,13 @@ function friendlyZCodeError(status: number | undefined, text: string): string {
     return `Start Plan model is currently busy or concurrency limit reached. Please retry shortly.`;
   }
   if (/3012|unusual activity/i.test(msg)) {
-    return `ZCode gateway check rejected request. Please check /zcode.doctor.`;
+    return `ZCode gateway check rejected request. Please check /zcode-cloud.doctor.`;
   }
   if (/1113|insufficient balance|arrear|no resource package/i.test(msg)) {
-    return `Insufficient balance or no active plan for this model. Run /login zcode to refresh.`;
+    return `Insufficient balance or no active plan for this model. Run /login zcode-cloud to refresh.`;
   }
   if (/1004|1000|invalid api key|token expired|authentication failed/i.test(msg)) {
-    return `Authentication failed. Run /login zcode to re-authenticate.`;
+    return `Authentication failed. Run /login zcode-cloud to re-authenticate.`;
   }
   if (/1305|overloaded/i.test(msg)) {
     return `The model is currently overloaded. Please retry in a few moments.`;
@@ -76,7 +78,7 @@ function friendlyZCodeError(status: number | undefined, text: string): string {
     return `Request rejected (${msg}). Please verify model parameters.`;
   }
   if (status === 401) {
-    return "Authentication failed. Next: run /login zcode.";
+    return "Authentication failed. Next: run /login zcode-cloud.";
   }
   if (status === 403) {
     return `Access denied (${msg}). Next: check account entitlement.`;
@@ -341,9 +343,13 @@ export function streamZCode(
     const toolCallRawArgs = new Map<number, string>();
 
     try {
-      const auth = parseApiKey(options?.apiKey);
+      // Plan providers reuse only the namespaced OAuth login of this fork.
+      let auth = parseApiKey(options?.apiKey);
       if (!auth.token && !auth.zcodeJwtToken) {
-        throw new Error("Missing ZCode credentials. Run /login zcode first.");
+        auth = readStoredZCodeCredentials() ?? auth;
+      }
+      if (!auth.token && !auth.zcodeJwtToken) {
+        throw new Error("Missing ZCode credentials. Run /login zcode-cloud first.");
       }
 
       const endpoint = resolveEndpointForPlan(plan, model, auth);
@@ -748,7 +754,7 @@ export function streamZCode(
 }
 
 function resolvePlanFromModel(model: Model<Api>): ZCodePlan {
-  if (model.provider === "zcode-individual-plan" || model.provider === "zcode-individual") {
+  if (model.provider === PROVIDER_ID_INDIVIDUAL_PLAN) {
     return ZCodePlan.INDIVIDUAL_PLAN;
   }
   return ZCodePlan.START_PLAN;

@@ -206,7 +206,7 @@ export async function detectAccountPlans(rawApiKey: string): Promise<ZCodeAccoun
     return {
       authenticated: false,
       individualPlan: { plan: ZCodePlan.INDIVIDUAL_PLAN, status: ZCodePlanStatus.INACTIVE },
-      message: "No credentials found. Run /login zcode first.",
+      message: "No credentials found. Run /login zcode-cloud first.",
       providerSource: auth.providerSource || "unknown",
       startPlan: { plan: ZCodePlan.START_PLAN, status: ZCodePlanStatus.INACTIVE },
     };

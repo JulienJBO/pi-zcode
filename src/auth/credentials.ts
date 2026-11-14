@@ -1,6 +1,7 @@
 import { readStoredCredential } from "@earendil-works/pi-coding-agent";
 import type { ZCodeParsedApiKey } from "../types/types.js";
 import { parseApiKey } from "../client/client.js";
+import { PROVIDER_ID } from "../models/models.js";
 
 let cached: ZCodeParsedApiKey | undefined = undefined;
 let loadedAt = 0;
@@ -8,7 +9,7 @@ let loadedAt = 0;
 const CACHE_TTL_MS = 60 * 1000;
 
 /**
- * Read the stored `zcode` credentials using Pi's official `readStoredCredential` API.
+ * Read the stored `zcode-cloud` credentials using Pi's official `readStoredCredential` API.
  * This keeps the per-plan providers independent while reusing the single login entry.
  */
 export function readStoredZCodeCredentials(force = false): ZCodeParsedApiKey | undefined {
@@ -17,7 +18,7 @@ export function readStoredZCodeCredentials(force = false): ZCodeParsedApiKey | u
   }
 
   try {
-    const cred = readStoredCredential("zcode") as Record<string, unknown> | undefined;
+    const cred = readStoredCredential(PROVIDER_ID) as Record<string, unknown> | undefined;
     if (!cred) {
       return undefined;
     }

@@ -4,8 +4,8 @@ import { buildZCodeSourceHeaders, parseApiKey, resolveBaseHost } from "../client
 import { ZCODE_API } from "../types/types.js";
 import { zcodeFetch } from "../utils/http.js";
 
-export const PROVIDER_ID = "zcode";
-export const PROVIDER_BASE = "zcode"; // Internal namespace; per-plan providers are ZCodePlan-<plan>
+export const PROVIDER_ID = "zcode-cloud";
+export const PROVIDER_BASE = "zcode-cloud"; // Internal namespace; per-plan providers are ZCodePlan-<plan>
 
 export const DEFAULT_THINKING_LEVEL_MAP = {
   high: "high",
@@ -15,8 +15,8 @@ export const DEFAULT_THINKING_LEVEL_MAP = {
   xhigh: "high",
 };
 
-export const PROVIDER_ID_START_PLAN = "zcode-start-plan";
-export const PROVIDER_ID_INDIVIDUAL_PLAN = "zcode-individual-plan";
+export const PROVIDER_ID_START_PLAN = "zcode-cloud-start-plan";
+export const PROVIDER_ID_INDIVIDUAL_PLAN = "zcode-cloud-individual-plan";
 
 export function providerIdForPlan(plan: ZCodePlan): string {
   switch (plan) {
@@ -206,6 +206,6 @@ export async function fetchModelIdsForPlan(
 
 export const ZCODE_MODELS: ProviderModelConfig[] = [];
 export const PROVIDER_NAMES: Record<ZCodePlan, string> = {
-  [ZCodePlan.START_PLAN]: "ZCode Start Plan",
-  [ZCodePlan.INDIVIDUAL_PLAN]: "ZCode Individual Plan",
+  [ZCodePlan.START_PLAN]: "ZCode Cloud Start Plan",
+  [ZCodePlan.INDIVIDUAL_PLAN]: "ZCode Cloud Individual Plan",
 };

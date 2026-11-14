@@ -352,9 +352,7 @@ export function streamZCode(
       const linkedPlan =
         model.provider === PROVIDER_ID_START_PLAN ||
         model.provider === PROVIDER_ID_INDIVIDUAL_PLAN;
-      const auth = linkedPlan
-        ? readStoredZCodeCredentials(true)
-        : parseApiKey(options?.apiKey);
+      const auth = linkedPlan ? readStoredZCodeCredentials(true) : parseApiKey(options?.apiKey);
       if (!auth || (!auth.token && !auth.zcodeJwtToken)) {
         throw new Error("Missing ZCode credentials. Run /login zcode-cloud first.");
       }

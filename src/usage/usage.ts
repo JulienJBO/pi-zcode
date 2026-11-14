@@ -3,7 +3,7 @@ import { buildZCodeHeaders, parseApiKey, resolveBaseHost } from "../client/clien
 import { PROVIDER_ID } from "../models/models.js";
 import type { ZCodeAccountPlans, ZCodeAccountUsage } from "../types/types.js";
 import { zcodeFetch } from "../utils/http.js";
-import { formatResetTime, zcodeEnv } from "../utils/util.js";
+import { formatResetTime } from "../utils/util.js";
 
 interface StartPlanBalanceResponse {
   code: number;
@@ -32,7 +32,7 @@ export async function fetchAccountUsage(
       authenticated: false,
       balances: [],
       limits: [],
-      message: "No active ZCode credentials found. Please run /login zcode first.",
+      message: "No active ZCode credentials found. Please run /login zcode-cloud first.",
       subscriptions: [],
     };
   }
@@ -134,7 +134,7 @@ function makeProgressBar(fraction: number, length = 20): string {
  */
 export function formatUsageSummary(plans: ZCodeAccountPlans): string {
   if (!plans.authenticated) {
-    return plans.message || "Not authenticated with ZCode. Please run /login zcode.";
+    return plans.message || "Not authenticated with ZCode. Please run /login zcode-cloud.";
   }
 
   const lines: string[] = [];
@@ -191,7 +191,7 @@ export function formatUsageReport(plans: ZCodeAccountPlans, usage: ZCodeAccountU
     }
   }
 
-  lines.push("\nCommands: /login zcode | /zcode.usage | /zcode.doctor");
+  lines.push("\nCommands: /login zcode-cloud | /zcode-cloud.usage | /zcode-cloud.doctor");
   return lines.join("\n");
 }
 
@@ -209,5 +209,5 @@ export async function resolveApiKeyFromContext(
   } catch {
     // Fall through
   }
-  return zcodeEnv("API_KEY") || zcodeEnv("TOKEN");
+  return process.env.ZCODE_CLOUD_API_KEY || process.env.ZCODE_CLOUD_TOKEN;
 }

@@ -8,7 +8,7 @@ export interface ZCodePlanResult {
   models?: string[];
 }
 
-export const ZCODE_API = "zcode-stream";
+export const ZCODE_API = "zcode-cloud-stream";
 
 export interface ZCodeOAuthCredentials extends OAuthCredentials {
   businessAccessToken?: string;

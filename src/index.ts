@@ -1,11 +1,12 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { registerApiProvider } from "@earendil-works/pi-ai/compat";
 import { getZCodeApiKey, loginZCode, refreshZCodeToken } from "./auth/index.js";
-import { readStoredZCodeCredentials } from "./auth/credentials.js";
+import { readStoredZCodeCredentials, setStoredZCodeCredentials } from "./auth/credentials.js";
 import {
   acquireCaptchaVerifyParam,
   DEFAULT_ENDPOINT,
   endpointCandidates,
+  parseApiKey,
   prewarmConnection,
 } from "./client/index.js";
 import { getLastDiagnostics, runWithDiagnostics } from "./diagnostics/index.js";
@@ -14,6 +15,8 @@ import {
   fetchModelCatalog,
   fetchModelIdsForPlan,
   PROVIDER_ID,
+  PROVIDER_ID_INDIVIDUAL_PLAN,
+  PROVIDER_ID_START_PLAN,
   providerIdForPlan,
   PROVIDER_NAMES,
 } from "./models/index.js";
@@ -88,7 +91,7 @@ export async function detectAndRegisterPlans(
     const models = buildModelsForPlan(ids, catalog);
     const providerId = providerIdForPlan(reg.plan);
 
-    // Register dedicated provider for this plan (e.g. zcode-start-plan)
+    // Register dedicated provider for this plan (e.g. zcode-cloud-start-plan)
     pi.registerProvider(providerId, {
       name: PROVIDER_NAMES[reg.plan],
       baseUrl: DEFAULT_ENDPOINT,
@@ -100,21 +103,20 @@ export async function detectAndRegisterPlans(
     allActiveModels.push(...models);
   }
 
-  // Also register active models on the base `zcode` provider so /model zcode/<model> works
+  // Also register active models on the base `zcode-cloud` provider so /model zcode-cloud/<model> works
   pi.registerProvider(PROVIDER_ID, {
-    name: "ZCode",
+    name: "ZCode Cloud",
     baseUrl: DEFAULT_ENDPOINT,
     api: ZCODE_API,
     models: allActiveModels,
     oauth: {
-      name: "ZCode",
+      name: "ZCode Cloud",
       login: async (callbacks) => {
         const creds = await loginZCode(callbacks);
+        const parsed = parseApiKey(getZCodeApiKey(creds));
+        setStoredZCodeCredentials(parsed);
         if (activeExtensionAPI) {
-          const parsed = readStoredZCodeCredentials(true);
-          if (parsed) {
-            await detectAndRegisterPlans(activeExtensionAPI, parsed).catch(() => undefined);
-          }
+          await detectAndRegisterPlans(activeExtensionAPI, parsed).catch(() => undefined);
         }
         return creds;
       },
@@ -143,18 +145,17 @@ export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void
 
   // Base provider registration
   pi.registerProvider(PROVIDER_ID, {
-    name: "ZCode",
+    name: "ZCode Cloud",
     baseUrl: DEFAULT_ENDPOINT,
     api: ZCODE_API,
     models: [],
     oauth: {
-      name: "ZCode",
+      name: "ZCode Cloud",
       login: async (callbacks) => {
         const creds = await loginZCode(callbacks);
-        const parsed = readStoredZCodeCredentials(true);
-        if (parsed) {
-          await detectAndRegisterPlans(pi, parsed).catch(() => undefined);
-        }
+        const parsed = parseApiKey(getZCodeApiKey(creds));
+        setStoredZCodeCredentials(parsed);
+        await detectAndRegisterPlans(pi, parsed).catch(() => undefined);
         return creds;
       },
       refreshToken: refreshZCodeToken,
@@ -177,13 +178,13 @@ export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void
     }
   });
 
-  pi.registerCommand("zcode.usage", {
+  pi.registerCommand("zcode-cloud.usage", {
     description: "Show detected plans, daily balance, and subscription status",
     handler: async (_args, ctx) => {
       try {
         const apiKey = await resolveApiKeyFromContext(ctx);
         if (!apiKey) {
-          emitCommandOutput(ctx, "No ZCode credentials found. Run /login zcode first.", "warning");
+          emitCommandOutput(ctx, "No ZCode credentials found. Run /login zcode-cloud first.", "warning");
           return;
         }
         if (ctx.hasUI) {
@@ -209,12 +210,12 @@ export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void
     },
   });
 
-  pi.registerCommand("zcode.doctor", {
+  pi.registerCommand("zcode-cloud.doctor", {
     description: "Show ZCode diagnostics report",
     handler: async (_args, ctx) => {
       const d = getLastDiagnostics();
       const lines = [
-        "ZCode Provider Doctor",
+        "ZCode Cloud Provider Doctor",
         `• providerId: ${PROVIDER_ID}`,
         `• endpoint: ${d.endpoint || "none"}`,
         `• status: ${d.status ?? "none"}`,
@@ -223,7 +224,7 @@ export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void
         `• requestId: ${d.requestId || "none"}`,
         `• error: ${d.error ? redactSecrets(d.error) : "none"}`,
         "• transport: native-streamSimple (SSE)",
-        "• commands: /login zcode, /zcode.usage, /zcode.doctor",
+        "• commands: /login zcode-cloud, /zcode-cloud.usage, /zcode-cloud.doctor",
       ];
       emitCommandOutput(ctx, lines.join("\n"));
     },
@@ -239,8 +240,8 @@ export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void
       return;
     }
     if (
-      message.provider !== "zcode-start-plan" &&
-      message.provider !== "zcode-individual-plan" &&
+      message.provider !== PROVIDER_ID_START_PLAN &&
+      message.provider !== PROVIDER_ID_INDIVIDUAL_PLAN &&
       message.provider !== PROVIDER_ID
     ) {
       return;

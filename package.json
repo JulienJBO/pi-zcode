@@ -1,18 +1,18 @@
 {
-  "name": "pi-zcode",
+  "name": "pi-zcode-cloud",
   "version": "0.1.4",
-  "description": "ZCode / Z.AI model provider for Pi Coding Agent",
+  "description": "ZCode Cloud provider for Pi, compatible with pi-zcode-provider",
   "type": "module",
   "main": "./src/index.ts",
   "author": "xifan",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xifan2333/pi-zcode.git"
+    "url": "git+https://github.com/JulienJBO/pi-zcode.git"
   },
   "bugs": {
-    "url": "https://github.com/xifan2333/pi-zcode/issues"
+    "url": "https://github.com/JulienJBO/pi-zcode/issues"
   },
-  "homepage": "https://github.com/xifan2333/pi-zcode#readme",
+  "homepage": "https://github.com/JulienJBO/pi-zcode#readme",
   "files": [
     "README.md",
     "README.zh-CN.md",
@@ -26,7 +26,7 @@
     "lint:fix": "oxlint --fix src index.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "tsc --noEmit && oxlint src index.ts && prettier --check ."
+    "check": "tsc --noEmit && oxlint src index.ts && prettier --check . && node --test test/fork-namespace.test.mjs"
   },
   "keywords": [
     "pi-package",

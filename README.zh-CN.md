@@ -1,10 +1,10 @@
-# pi-zcode
+# pi-zcode-cloud
+
+> **兼容分支：** 使用 `pi install git:github.com/JulienJBO/pi-zcode` 安装。此分支采用独立的 `zcode-cloud` Provider 和 OAuth 凭据，可与 `pi-zcode-provider` 共存；不要安装原版 `npm:pi-zcode`。
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/pi-zcode"><img src="https://img.shields.io/npm/v/pi-zcode?logo=npm&logoColor=white&color=CB3837" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/pi-zcode"><img src="https://img.shields.io/npm/dm/pi-zcode?logo=npm&logoColor=white&color=CB3837" alt="npm downloads"></a>
-  <a href="https://github.com/xifan2333/pi-zcode"><img src="https://img.shields.io/github/stars/xifan2333/pi-zcode?logo=github&logoColor=white&color=181717" alt="github stars"></a>
-  <a href="https://github.com/xifan2333/pi-zcode/blob/master/LICENSE"><img src="https://img.shields.io/github/license/xifan2333/pi-zcode?logo=open-source-initiative&logoColor=white&color=blue" alt="license"></a>
+  <a href="https://github.com/JulienJBO/pi-zcode"><img src="https://img.shields.io/github/stars/JulienJBO/pi-zcode?logo=github&logoColor=white&color=181717" alt="github stars"></a>
+  <a href="https://github.com/JulienJBO/pi-zcode/blob/master/LICENSE"><img src="https://img.shields.io/github/license/JulienJBO/pi-zcode?logo=open-source-initiative&logoColor=white&color=blue" alt="license"></a>
   <img src="https://img.shields.io/badge/node-%3E%3D20.0.0-339933?logo=node.js&logoColor=white" alt="node version">
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white" alt="typescript">
 </p>
@@ -21,7 +21,7 @@
 
 ## 概述
 
-`pi-zcode` 是为 [Pi Coding Agent](https://pi.dev) 打造的纯原生、高内聚 ZCode / Z.AI / 智谱 BigModel 扩展插件。支持在终端 Coding Agent 工作流中直接调用 GLM-5.3、GLM-5.3-Flash 及 GLM-5 系列大模型，无需依赖任何本地 ZCode 桌面应用或外部 CLI。
+`pi-zcode-cloud` 是为 [Pi Coding Agent](https://pi.dev) 打造的纯原生、高内聚 ZCode / Z.AI / 智谱 BigModel 扩展插件。支持在终端 Coding Agent 工作流中直接调用 GLM-5.3、GLM-5.3-Flash 及 GLM-5 系列大模型，无需依赖任何本地 ZCode 桌面应用或外部 CLI。
 
 ---
 
@@ -32,7 +32,7 @@
 - **动态模型发现**：启动及登录后自动从云端接口拉取当前账号实际可用的模型列表，无需手动维护静态配置。
 - **纯内存 Headless 静默验证码求解**：内置基于 `happy-dom` 的内存级阿里云验证码求解器，后台毫秒级（约 700ms）自动完成无感验证与 Token 预热，大段自动化 Agent 编码任务 100% 不被打断。
 - **原生思考链与工具调用**：完整支持 GLM 系列模型的深度思考链（`thinking_delta` / `reasoning_content`）流式输出以及结构化工具调用（Tool Calling）。
-- **配额与健康诊断**：内置 `/zcode.usage`（查看计划与每日余额）和 `/zcode.doctor`（查看网络延迟与诊断信息）。
+- **配额与健康诊断**：内置 `/zcode-cloud.usage`（查看计划与每日余额）和 `/zcode-cloud.doctor`（查看网络延迟与诊断信息）。
 
 ---
 
@@ -41,7 +41,7 @@
 1. **在 Pi 中安装插件**：
 
    ```bash
-   pi install npm:pi-zcode
+   pi install git:github.com/JulienJBO/pi-zcode
    ```
 
    或从本地源码安装：
@@ -53,7 +53,7 @@
 2. **登录账号**：
 
    ```text
-   /login zcode
+   /login zcode-cloud
    ```
 
    在弹出的选择框中选择 `BigModel (China)` 或 `Z.ai (Global)` 完成网页 OAuth 授权。
@@ -61,11 +61,11 @@
 3. **选择并使用模型**：
    使用 Pi 原生的 `/model` 选择器：
    ```text
-   /model zcode/glm-5.3-flash
+   /model zcode-cloud/glm-5.3-flash
    ```
    或体验旗舰大模型：
    ```text
-   /model zcode/glm-5.3
+   /model zcode-cloud/glm-5.3
    ```
 
 ---
@@ -74,10 +74,10 @@
 
 | 命令            | 说明                                                        |
 | :-------------- | :---------------------------------------------------------- |
-| `/login zcode`  | 发起 Z.ai / BigModel 官方网页 OAuth 登录流程。              |
+| `/login zcode-cloud`  | 发起 Z.ai / BigModel 官方网页 OAuth 登录流程。              |
 | `/model`        | Pi 原生模型选择器，展示当前账号所有可用模型。               |
-| `/zcode.usage`  | 查询当前计划状态、每日模型余量与重置时间。                  |
-| `/zcode.doctor` | 显示连接诊断（Endpoint、请求延迟、Request ID 与报错日志）。 |
+| `/zcode-cloud.usage`  | 查询当前计划状态、每日模型余量与重置时间。                  |
+| `/zcode-cloud.doctor` | 显示连接诊断（Endpoint、请求延迟、Request ID 与报错日志）。 |
 
 ---
 

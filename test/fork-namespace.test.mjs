@@ -56,3 +56,10 @@ test("plan-specific providers are selectable without copying OAuth tokens", () =
   assert.match(entry, /getProviderAuthStatus\(id\)/);
   assert.match(entry, /getAvailable\(\)/);
 });
+
+test("base OAuth provider exposes only Start Plan models", () => {
+  const entry = read("src/index.ts");
+  assert.match(entry, /if \(reg\.plan === ZCodePlan\.START_PLAN\)/);
+  assert.match(entry, /models: startPlanModels/);
+  assert.doesNotMatch(entry, /allActiveModels/);
+});

@@ -13,7 +13,7 @@ import {
   parseApiKey,
   prewarmConnection,
 } from "./client/index.js";
-import { getLastDiagnostics, runWithDiagnostics } from "./diagnostics/index.js";
+import { getLastDiagnostics, runWithDiagnostics, setLastError } from "./diagnostics/index.js";
 import {
   buildModelsForPlan,
   fetchModelCatalog,
@@ -131,7 +131,7 @@ export async function detectAndRegisterPlans(
         const parsed = parseApiKey(getZCodeApiKey(creds));
         setStoredZCodeCredentials(parsed);
         if (activeExtensionAPI) {
-          await detectAndRegisterPlans(activeExtensionAPI, parsed).catch(() => undefined);
+          await registerPlansWithDiagnostics(activeExtensionAPI, parsed);
         }
         return creds;
       },
@@ -142,6 +142,19 @@ export async function detectAndRegisterPlans(
   });
 
   return plans;
+}
+
+async function registerPlansWithDiagnostics(
+  pi: ExtensionAPI,
+  credentials: ZCodeParsedApiKey,
+): Promise<void> {
+  try {
+    await detectAndRegisterPlans(pi, credentials);
+  } catch (error) {
+    // Do not turn a successful OAuth login into a failure just because the
+    // entitlement catalog cannot be refreshed; expose the error in /doctor.
+    setLastError(error);
+  }
 }
 
 export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void> {
@@ -170,7 +183,7 @@ export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void
         const creds = await loginZCode(callbacks);
         const parsed = parseApiKey(getZCodeApiKey(creds));
         setStoredZCodeCredentials(parsed);
-        await detectAndRegisterPlans(pi, parsed).catch(() => undefined);
+        await registerPlansWithDiagnostics(pi, parsed);
         return creds;
       },
       refreshToken: refreshZCodeToken,
@@ -182,14 +195,14 @@ export default async function initZCodeExtension(pi: ExtensionAPI): Promise<void
   // If already logged in, register plan providers immediately on startup
   const stored = readStoredZCodeCredentials(true);
   if (stored) {
-    await detectAndRegisterPlans(pi, stored).catch(() => undefined);
+    await registerPlansWithDiagnostics(pi, stored);
   }
 
   // Refresh plan registration on session start
   pi.on("session_start", async () => {
     const creds = readStoredZCodeCredentials(true);
     if (creds) {
-      await detectAndRegisterPlans(pi, creds).catch(() => undefined);
+      await registerPlansWithDiagnostics(pi, creds);
     } else {
       // The plan providers have no independent credentials: hide them on logout.
       pi.unregisterProvider(PROVIDER_ID_START_PLAN);

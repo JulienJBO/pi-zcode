@@ -16,6 +16,7 @@ test("login and credential storage are isolated", () => {
   const credentials = read("src/auth/credentials.ts");
   assert.match(credentials, /readStoredCredential\(PROVIDER_ID\)/);
   assert.doesNotMatch(credentials, /readStoredCredential\("zcode"\)/);
+  assert.match(read("src/index.ts"), /setStoredZCodeCredentials\(parsed\)/);
   assert.match(read("src/index.ts"), /parseApiKey\(getZCodeApiKey\(creds\)\)/);
 });
 
